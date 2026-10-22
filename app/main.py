@@ -3,10 +3,11 @@ import secrets
 from contextlib import asynccontextmanager
 from pathlib import Path
 from types import SimpleNamespace
+from urllib.parse import urlsplit
 from xml.sax.saxutils import quoteattr
 
 from fastapi import Depends, FastAPI, Form, HTTPException, Request
-from fastapi.responses import HTMLResponse, RedirectResponse, Response
+from fastapi.responses import HTMLResponse, PlainTextResponse, RedirectResponse, Response
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -37,6 +38,36 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="rssifi", version=__version__, lifespan=lifespan)
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
+
+UNSAFE_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
+
+
+def _allowed_hosts(request: Request) -> set[str]:
+    hosts = {request.headers.get("host", "").lower()}
+    if fwd := request.headers.get("x-forwarded-host"):
+        hosts.add(fwd.split(",")[0].strip().lower())
+    if settings.base_url:
+        hosts.add(urlsplit(settings.base_url).netloc.lower())
+    hosts.discard("")
+    return hosts
+
+
+@app.middleware("http")
+async def csrf_origin_check(request: Request, call_next):
+    """Reject cross-site form submissions.
+
+    Browsers resend basic-auth credentials automatically, so a hostile page could
+    otherwise submit forms to rssifi on the user's behalf. Browsers always attach
+    Origin (or at least Referer) to cross-site POSTs; requests with neither come
+    from non-browser clients and are allowed.
+    """
+    if request.method in UNSAFE_METHODS:
+        source = request.headers.get("origin") or request.headers.get("referer")
+        if source is not None:
+            host = urlsplit(source).netloc.lower() if source != "null" else ""
+            if host not in _allowed_hosts(request):
+                return PlainTextResponse("Cross-site request rejected", status_code=403)
+    return await call_next(request)
 
 _basic = HTTPBasic(auto_error=False)
 

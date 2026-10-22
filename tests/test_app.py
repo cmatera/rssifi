@@ -115,3 +115,43 @@ def test_opml(client):
     client.post("/sites", data=FORM)
     r = client.get("/opml")
     assert 'xmlUrl="http://testserver/feeds/' in r.text
+
+
+@respx.mock
+def test_cross_site_post_is_rejected(client):
+    respx.get("https://blog.example.com/").mock(return_value=httpx.Response(200, text=BLOG))
+    client.post("/sites", data=FORM)
+    site = _site()
+
+    for headers in (
+        {"Origin": "https://evil.example"},
+        {"Origin": "null"},
+        {"Referer": "https://evil.example/page"},
+    ):
+        r = client.post(f"/sites/{site.id}/delete", headers=headers, follow_redirects=False)
+        assert r.status_code == 403, headers
+    assert client.get(f"/feeds/{site.slug}.xml").status_code == 200
+
+
+@respx.mock
+def test_same_origin_post_is_allowed(client):
+    respx.get("https://blog.example.com/").mock(return_value=httpx.Response(200, text=BLOG))
+    r = client.post("/sites", data=FORM, headers={"Origin": "http://testserver"}, follow_redirects=False)
+    assert r.status_code == 303
+    site = _site()
+    r = client.post(
+        f"/sites/{site.id}/delete",
+        headers={"Referer": f"http://testserver/sites/{site.id}"},
+        follow_redirects=False,
+    )
+    assert r.status_code == 303
+    assert client.get(f"/feeds/{site.slug}.xml").status_code == 404
+
+
+def test_forwarded_host_is_allowed(client):
+    r = client.post(
+        "/preview",
+        data={**FORM, "url": "ftp://x"},
+        headers={"Origin": "https://rssifi.example.com", "X-Forwarded-Host": "rssifi.example.com"},
+    )
+    assert r.status_code == 200

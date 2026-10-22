@@ -20,6 +20,8 @@ into any RSS reader (Feedly, Inoreader, NetNewsWire, Miniflux, FreshRSS…).
 - **OPML export** to subscribe to every feed at once.
 - Optional **basic auth** for the management UI. Feed URLs stay public, so readers can
   fetch them without credentials. Each feed URL contains a random, unguessable ID.
+- Cross-site request protection: form submissions whose `Origin`/`Referer` isn't
+  rssifi itself are rejected, so other web pages can't act on your behalf.
 - SQLite storage in a Docker volume.
 
 ## Run with Docker
@@ -53,6 +55,15 @@ docker run -d --name rssifi -p 8000:8000 -v rssifi-data:/data ghcr.io/cmatera/rs
 > over the internet. Expose it through a reverse proxy or tunnel and set `RSSIFI_BASE_URL`.
 
 Run a **single** container/worker: the scheduler runs inside the app process.
+
+### Exposing rssifi outside your network
+
+- Put it behind HTTPS (e.g. Nginx Proxy Manager) and set `RSSIFI_ADMIN_USER` /
+  `RSSIFI_ADMIN_PASSWORD` with a long random password. Basic auth has no lockout.
+- Set `RSSIFI_BASE_URL` to the public URL. The proxy must pass the original `Host`
+  (or `X-Forwarded-Host`) header, otherwise the cross-site check rejects your own forms.
+- If only a hosted RSS reader needs access, expose just `/feeds/*` and keep the UI on
+  your LAN/VPN.
 
 ## Endpoints
 
