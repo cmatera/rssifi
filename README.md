@@ -35,7 +35,7 @@ To use a prebuilt image from GitHub Container Registry (published by CI on every
 to `main`):
 
 ```bash
-docker run -d --name rssifi -p 8000:8000 -v rssifi-data:/data ghcr.io/<owner>/rssifi:latest
+docker run -d --name rssifi -p 8000:8000 -v rssifi-data:/data ghcr.io/cmatera/rssifi:latest
 ```
 
 ### Configuration
