@@ -1,0 +1,15 @@
+{% if error %}
+  <p class="error">{{ error }}</p>
+{% elif result %}
+  <p class="muted">Page title: <strong>{{ result.page_title }}</strong> · {{ result.items|length }} item(s) found</p>
+  {% if not result.items %}
+    <p class="error">Nothing found. Try CSS selectors or “page change” mode.</p>
+  {% else %}
+  <ol class="items compact">
+    {% for it in result.items[:25] %}
+    <li><a href="{{ it.link }}" target="_blank" rel="noopener">{{ it.title }}</a>
+      {% if it.summary %}<div class="small muted">{{ it.summary[:160] }}</div>{% endif %}</li>
+    {% endfor %}
+  </ol>
+  {% endif %}
+{% endif %}

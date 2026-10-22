@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit' if site.id else 'Add' }} site · rssifi{% endblock %}
+{% block content %}
+<h1>{{ 'Edit ' ~ site.name if site.id else 'Add a site' }}</h1>
+{% if errors %}<div class="error"><ul>{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul></div>{% endif %}
+
+<form id="site-form" method="post" action="{{ '/sites/' ~ site.id if site.id else '/sites' }}" class="card form">
+  <div class="grid2">
+    <label>Website URL
+      <input type="url" name="url" value="{{ site.url }}" required placeholder="https://example.com/blog">
+    </label>
+    <label>Feed name
+      <input name="name" value="{{ site.name }}" placeholder="Defaults to the domain">
+    </label>
+  </div>
+  <label>Description <span class="muted">(optional)</span>
+    <input name="description" value="{{ site.description }}">
+  </label>
+
+  <fieldset>
+    <legend>How to find new content</legend>
+    <div class="radios">
+      <label><input type="radio" name="mode" value="auto" {{ 'checked' if site.mode == 'auto' }}> <strong>Automatic</strong> <span class="muted">detect lists of articles/links</span></label>
+      <label><input type="radio" name="mode" value="css" {{ 'checked' if site.mode == 'css' }}> <strong>CSS selectors</strong> <span class="muted">you choose what an item is</span></label>
+      <label><input type="radio" name="mode" value="change" {{ 'checked' if site.mode == 'change' }}> <strong>Page change</strong> <span class="muted">new item whenever the page text changes</span></label>
+    </div>
+    <div class="mode-panel" data-mode="css">
+      <div class="grid2">
+        <label>Item selector <span class="req">required</span><input name="item_selector" value="{{ site.item_selector }}" placeholder="e.g. .post, ul.news > li"></label>
+        <label>Title selector <span class="muted">(within item)</span><input name="title_selector" value="{{ site.title_selector }}" placeholder="e.g. h2"></label>
+        <label>Link selector <span class="muted">(within item)</span><input name="link_selector" value="{{ site.link_selector }}" placeholder="defaults to first link"></label>
+        <label>Summary selector <span class="muted">(within item)</span><input name="summary_selector" value="{{ site.summary_selector }}" placeholder="e.g. p.excerpt"></label>
+      </div>
+    </div>
+    <div class="mode-panel" data-mode="change">
+      <label>Watch only this part of the page <span class="muted">(CSS selector, optional)</span>
+        <input name="content_selector" value="{{ site.content_selector }}" placeholder="e.g. #main, .price">
+      </label>
+    </div>
+    <button type="button" class="btn" id="preview-btn">Preview items</button>
+    <div id="preview" class="preview"></div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Update schedule</legend>
+    <div class="radios">
+      <label><input type="radio" name="schedule_type" value="interval" {{ 'checked' if site.schedule_type == 'interval' }}> Every
+        <select id="interval-preset">
+          {% for m, label in [(15,'15 minutes'),(30,'30 minutes'),(60,'hour'),(180,'3 hours'),(360,'6 hours'),(720,'12 hours'),(1440,'day'),(10080,'week')] %}
+          <option value="{{ m }}" {{ 'selected' if site.interval_minutes == m }}>{{ label }}</option>
+          {% endfor %}
+          <option value="custom">custom…</option>
+        </select>
+        <input type="number" min="1" name="interval_minutes" value="{{ site.interval_minutes }}" class="narrow"> minutes
+      </label>
+      <label><input type="radio" name="schedule_type" value="cron" {{ 'checked' if site.schedule_type == 'cron' }}> Cron (UTC)
+        <input name="cron" value="{{ site.cron }}" placeholder="0 7 * * 1-5" class="mono">
+        <span class="muted small">minute hour day month weekday</span>
+      </label>
+    </div>
+  </fieldset>
+
+  <label class="check"><input type="checkbox" name="enabled" {{ 'checked' if site.enabled }}> Enabled</label>
+
+  <div class="actions">
+    <button class="btn primary">{{ 'Save changes' if site.id else 'Add site' }}</button>
+    <a class="btn" href="{{ '/sites/' ~ site.id if site.id else '/' }}">Cancel</a>
+  </div>
+</form>
+{% endblock %}

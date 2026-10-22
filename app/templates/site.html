@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}{{ site.name }} · rssifi{% endblock %}
+{% block content %}
+<div class="head-row">
+  <div>
+    <h1>{{ site.name }}</h1>
+    <a class="muted" href="{{ site.url }}" target="_blank" rel="noopener">{{ site.url }}</a>
+  </div>
+  <div class="actions">
+    <form method="post" action="/sites/{{ site.id }}/refresh"><button class="btn">Refresh now</button></form>
+    <a class="btn" href="/sites/{{ site.id }}/edit">Edit</a>
+    <form method="post" action="/sites/{{ site.id }}/delete" data-confirm="Delete {{ site.name }} and its feed?"><button class="btn danger">Delete</button></form>
+  </div>
+</div>
+
+<section class="card">
+  <label>RSS feed URL</label>
+  <div class="copy-row">
+    <input readonly value="{{ feed_url(site) }}">
+    <button class="btn primary copy" data-copy="{{ feed_url(site) }}">Copy</button>
+    <a class="btn" href="{{ feed_url(site) }}" target="_blank">Open</a>
+  </div>
+  <dl class="meta">
+    <div><dt>Mode</dt><dd>{{ site.mode }}</dd></div>
+    <div><dt>Schedule</dt><dd>{{ site.schedule_label }}{% if not site.enabled %} (paused){% endif %}</dd></div>
+    <div><dt>Last checked</dt><dd>{% if site.last_checked_at %}<span data-time="{{ site.last_checked_at.isoformat() }}"></span>{% else %}never{% endif %}</dd></div>
+    <div><dt>Next check</dt><dd>{% set nr = next_run(site.id) %}{% if nr %}<span data-time="{{ nr.isoformat() }}"></span>{% else %}—{% endif %}</dd></div>
+  </dl>
+  {% if site.last_error %}<p class="error">Last error: {{ site.last_error }}</p>{% endif %}
+</section>
+
+<h2>Items <span class="muted">({{ items|length }})</span></h2>
+{% if not items %}
+  <p class="muted">No items found yet. Try Refresh, or edit the site to adjust how content is extracted.</p>
+{% else %}
+<ul class="items">
+  {% for it in items %}
+  <li>
+    <a href="{{ it.link }}" target="_blank" rel="noopener">{{ it.title }}</a>
+    <span class="muted small" data-time="{{ it.first_seen_at.isoformat() }}"></span>
+    {% if it.summary %}<p class="small">{{ it.summary[:280] }}{% if it.summary|length > 280 %}…{% endif %}</p>{% endif %}
+  </li>
+  {% endfor %}
+</ul>
+{% endif %}
+{% endblock %}

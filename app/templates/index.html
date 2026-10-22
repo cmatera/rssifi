@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Monitored sites</h1>
+{% if not sites %}
+  <div class="empty">
+    <p>No sites yet. Add a website and rssifi will turn it into an RSS feed.</p>
+    <form action="/sites/new" method="get" class="inline">
+      <input type="url" name="url" placeholder="https://example.com/news" required>
+      <button class="btn primary">Add site</button>
+    </form>
+  </div>
+{% else %}
+<div class="table-wrap">
+<table class="sites">
+  <thead><tr><th>Site</th><th>Schedule</th><th>Status</th><th>Items</th><th>Feed</th><th></th></tr></thead>
+  <tbody>
+  {% for s in sites %}
+    <tr class="{{ '' if s.enabled else 'disabled' }}">
+      <td><a href="/sites/{{ s.id }}"><strong>{{ s.name }}</strong></a><br><span class="muted small url">{{ s.url }}</span></td>
+      <td>{{ s.schedule_label }}{% if not s.enabled %}<br><span class="badge">paused</span>{% endif %}</td>
+      <td>
+        {% if s.last_error %}<span class="badge err" title="{{ s.last_error }}">error</span>
+        {% elif s.last_success_at %}<span class="badge ok">ok</span>
+        {% else %}<span class="badge">pending</span>{% endif %}
+        {% if s.last_checked_at %}<br><span class="muted small" data-time="{{ s.last_checked_at.isoformat() }}"></span>{% endif %}
+      </td>
+      <td>{{ counts[s.id] }}</td>
+      <td><button class="btn small copy" data-copy="{{ feed_url(s) }}">Copy URL</button></td>
+      <td class="actions">
+        <form method="post" action="/sites/{{ s.id }}/refresh"><button class="btn small">Refresh</button></form>
+        <form method="post" action="/sites/{{ s.id }}/toggle"><button class="btn small">{{ 'Pause' if s.enabled else 'Resume' }}</button></form>
+        <a class="btn small" href="/sites/{{ s.id }}/edit">Edit</a>
+        <form method="post" action="/sites/{{ s.id }}/delete" data-confirm="Delete {{ s.name }} and its feed?"><button class="btn small danger">Delete</button></form>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endif %}
+{% endblock %}

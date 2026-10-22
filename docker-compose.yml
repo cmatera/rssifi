@@ -1,0 +1,20 @@
+services:
+  rssifi:
+    build: .
+    image: rssifi:latest
+    container_name: rssifi
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - rssifi-data:/data
+    environment:
+      # Public URL your RSS reader uses to reach rssifi (used in feed links).
+      # RSSIFI_BASE_URL: "https://rssifi.example.com"
+      # Protect the management UI (feeds remain public for RSS readers).
+      # RSSIFI_ADMIN_USER: "admin"
+      # RSSIFI_ADMIN_PASSWORD: "change-me"
+      RSSIFI_MAX_ITEMS: "50"
+
+volumes:
+  rssifi-data:
